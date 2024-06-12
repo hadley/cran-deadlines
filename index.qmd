@@ -104,23 +104,3 @@ problems |>
   pull() |>
   writeLines()
 ```
-
-
-<script>
-// Written by ChatGPT
-function expandDetailsFromHash() {
-    const fragment = window.location.hash.substring(1); // Remove the # from the hash
-    if (fragment) {
-        const detailsElement = document.getElementById(fragment);
-        if (detailsElement && detailsElement.tagName.toLowerCase() === "details") {
-            detailsElement.setAttribute("open", "");
-        }
-    }
-}
-
-// Expand details on initial page load
-document.addEventListener("DOMContentLoaded", expandDetailsFromHash);
-
-// Expand details whenever the hash changes
-window.addEventListener("hashchange", expandDetailsFromHash);
-</script>
