@@ -11,6 +11,10 @@ library(reactable)
 cran_db <- as_tibble(tools::CRAN_package_db())
 cran_results <- as_tibble(tools::CRAN_check_results())
 
+recursive_revdeps <- function(pkgs) {
+  tools::package_dependencies(pkgs, reverse = TRUE, recursive = TRUE)
+}
+
 has_deadline <- cran_db |> 
   filter(!is.na(Deadline)) |> 
   select(Package, Deadline, Maintainer) |> 
@@ -18,6 +22,7 @@ has_deadline <- cran_db |>
     Deadline = as.Date(Deadline),
     Maintainer = gsub(" <.*?>", "", Maintainer),
     Details = glue("<a href='#{Package}'>Details</a>"),
+    Dependencies = lengths(recursive_revdeps(Package))
   ) |>
   arrange(Deadline)
 
