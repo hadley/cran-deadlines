@@ -12,7 +12,7 @@ recursive_revdeps <- function(pkgs) {
   tools::package_dependencies(pkgs, reverse = TRUE, recursive = TRUE)
 }
 glue_log <- function(x, env = parent.frame()) {
-  message <- paste0("::notice::", glue(x, .envir = env), "\n")
+  message <- paste0("::notice title=R code::", glue(x, .envir = env), "\n")
   cat(message, file = stderr())
 }
 
