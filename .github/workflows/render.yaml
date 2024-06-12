@@ -28,7 +28,7 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
-      - name: Fetch latest data
+      - name: Render file
         run:  quarto render
 
       - name: Deploy to GitHub pages 🚀
