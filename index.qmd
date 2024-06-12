@@ -21,7 +21,6 @@ has_deadline <- cran_db |>
   mutate(
     Deadline = as.Date(Deadline),
     Maintainer = gsub(" <.*?>", "", Maintainer),
-    Details = glue("<a href='#{Package}'>Details</a>"),
     Dependencies = lengths(recursive_revdeps(Package))
   ) |>
   arrange(Deadline)
@@ -34,11 +33,11 @@ There are currently `r nrow(has_deadline)` packages at risk for removal from CRA
 #| echo: false
 has_deadline |>
   mutate(
-    Package = glue("<a href='https://cran.r-project.org/web/checks/check_results_{Package}.html'>{Package}</a>")
+    Package = glue("<a href='#{Package}'>{Package}</a>")
   ) |>
   reactable(
     filterable = TRUE, 
-    columns = list(Details = colDef(html = TRUE), Package = colDef(html = TRUE)),
+    columns = list(Package = colDef(html = TRUE)),
     defaultPageSize = 25
   )
 ```
@@ -83,13 +82,13 @@ problems <- cran_results |>
 problem_summary <- function(package, version, flavor, status, problems) {
   url <- glue("https://www.r-project.org/nosvn/R.check/{flavor}/{package}-00check.html")
   paste0(
-    glue("<details id='{package}'>"),
-    glue("<summary>{package} {version}</summary>"), "\n",
+    glue("### {package} {version} {{#{package}}}"), "\n",
+    glue("[CRAN Package Check Results](https://cran.r-project.org/web/checks/check_results_{package}.html)"), "\n\n",
     "\n",
     "Problems: \n\n",
     problems,
     "\n", "\n",
-    "Checks: \n\n",
+    "<details><summary>Checks</summary>\n",
     paste0(glue("* [{flavor}]({url}): {status}"), "\n", collapse = ""),
     "</details>",
     "\n"
