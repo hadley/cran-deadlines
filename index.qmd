@@ -51,29 +51,77 @@ has_deadline |>
 #| echo: false
 #| results: asis
 
+status_factor <- function(x) {
+  factor(x, c("FAILURE", "ERROR", "WARNING", "NOTE"))
+}
+
+cran_checks <- as_tibble(tools::CRAN_check_details())
+
+problem_summaries <- cran_checks |>
+  filter(Status != "OK") |>
+  semi_join(has_deadline, join_by(Package)) |>
+  distinct(Package, Status, Check) |>
+  mutate(
+    bullet = glue("* **{Status}**: {Check} "), 
+    Status = status_factor(Status),
+  ) |>
+  arrange(Package, Status) |>
+  summarise(bullets = glue_collapse(bullet, "\n"), .by = Package)
+# problem_summaries 
+  # |>
+  # summarise(Flavour = paste0(Flavor, collapse = ", "), .by = ) |>
+  # summarise(problems = , .by = Package)
+
 problems <- cran_results |> 
   select(-Maintainer, -Flags, -starts_with("T_"), -Priority) |> 
   filter(Status != "OK") |> 
   semi_join(has_deadline, join_by(Package)) |> 
   relocate(Package) |> 
-  mutate(Status = factor(Status, c("ERROR", "WARNING", "NOTE"))) |>
-  arrange(Package, Status)
+  mutate(Status = status_factor(Status)) |>
+  arrange(tolower(Package), Status)
 
-problem_summary <- function(package, version, flavor, status) {
+problem_summary <- function(package, version, flavor, status, problems) {
   url <- glue("https://www.r-project.org/nosvn/R.check/{flavor}/{package}-00check.html")
   paste0(
-    glue("### {package} {version} {{#{package}}}"), "\n",
+    glue("<details id='{package}'>"),
+    glue("<summary>{package} {version}</summary>"), "\n",
     "\n",
+    "Problems: \n\n",
+    problems,
+    "\n", "\n",
+    "Checks: \n\n",
     paste0(glue("* [{flavor}]({url}): {status}"), "\n", collapse = ""),
+    "</details>",
     "\n"
   )
 }
 
 problems |>
+  left_join(problem_summaries, join_by(Package)) |>
   summarise(
-    problem_summary(Package[1], Version[1], Flavor, Status), 
+    problem_summary(Package[1], Version[1], Flavor, Status, bullets[1]), 
     .by = Package
   ) |>
   pull() |>
   writeLines()
 ```
+
+
+<script>
+// Written by ChatGPT
+function expandDetailsFromHash() {
+    const fragment = window.location.hash.substring(1); // Remove the # from the hash
+    if (fragment) {
+        const detailsElement = document.getElementById(fragment);
+        if (detailsElement && detailsElement.tagName.toLowerCase() === "details") {
+            detailsElement.setAttribute("open", "");
+        }
+    }
+}
+
+// Expand details on initial page load
+document.addEventListener("DOMContentLoaded", expandDetailsFromHash);
+
+// Expand details whenever the hash changes
+window.addEventListener("hashchange", expandDetailsFromHash);
+</script>
