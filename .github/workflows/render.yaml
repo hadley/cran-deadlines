@@ -4,7 +4,7 @@ on:
   push:
   workflow_dispatch:
   schedule:
-    - cron:  '12 * * * *'
+    - cron: '12 9,21 * * *'
 
 name: render
 
@@ -31,6 +31,13 @@ jobs:
       - name: Render file
         run:  quarto render
 
+      - name: Commit Results
+        run: |
+          git config --local user.name "$GITHUB_ACTOR"
+          git config --local user.email "<>"
+          git commit deadline.txt -m 'New deadline' || exit 0
+          git push origin
+      
       - name: Deploy to GitHub pages 🚀
         if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@v4.5.0

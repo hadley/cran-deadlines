@@ -25,6 +25,8 @@ has_deadline <- cran_db |>
   ) |>
   arrange(Deadline)
 
+writeLines(as.character(max(has_deadline$Deadline)), "deadline.txt")
+
 ```
 
 There are currently `r nrow(has_deadline)` packages at risk for removal from CRAN if not fixed by the specified deadline:
