@@ -4,9 +4,9 @@ on:
   push:
   workflow_dispatch:
   schedule:
-    - cron:  '3 * * * *'
+    - cron:  '12 * * * *'
 
-name: scrape
+name: render
 
 jobs:
   scrape:
@@ -17,7 +17,7 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
