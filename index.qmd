@@ -8,13 +8,15 @@ library(dplyr, warn.conflicts = FALSE)
 library(glue)
 library(reactable)
 
-cran_db <- as_tibble(tools::CRAN_package_db())
-cran_results <- as_tibble(tools::CRAN_check_results())
-
 recursive_revdeps <- function(pkgs) {
   tools::package_dependencies(pkgs, reverse = TRUE, recursive = TRUE)
 }
+glue_log <- function(x, env = parent.frame()) {
+  message <- paste0("::notice::", glue(x, .envir = env), "\n")
+  cat(message, file = stderr())
+}
 
+cran_db <- as_tibble(tools::CRAN_package_db())
 has_deadline <- cran_db |> 
   filter(!is.na(Deadline)) |> 
   select(Package, Deadline, Maintainer) |> 
@@ -25,8 +27,9 @@ has_deadline <- cran_db |>
   ) |>
   arrange(Deadline)
 
-writeLines(as.character(max(has_deadline$Deadline)), "deadline.txt")
 
+glue_log("Found {nrow(has_deadline)} packages with deadlines")
+writeLines(as.character(max(has_deadline$Deadline)), "deadline.txt")
 ```
 
 There are currently `r nrow(has_deadline)` packages at risk for removal from CRAN if not fixed by the specified deadline:
@@ -57,7 +60,6 @@ status_factor <- function(x) {
 }
 
 cran_checks <- as_tibble(tools::CRAN_check_details())
-
 problem_summaries <- cran_checks |>
   filter(Status != "OK") |>
   semi_join(has_deadline, join_by(Package)) |>
@@ -68,11 +70,9 @@ problem_summaries <- cran_checks |>
   ) |>
   arrange(Package, Status) |>
   summarise(bullets = glue_collapse(bullet, "\n"), .by = Package)
-# problem_summaries 
-  # |>
-  # summarise(Flavour = paste0(Flavor, collapse = ", "), .by = ) |>
-  # summarise(problems = , .by = Package)
+glue_log("Found {nrow(problem_summaries)} packages with check details")
 
+cran_results <- as_tibble(tools::CRAN_check_results())
 problems <- cran_results |> 
   select(-Maintainer, -Flags, -starts_with("T_"), -Priority) |> 
   filter(Status != "OK") |> 
