@@ -1,0 +1,72 @@
+---
+title: CRAN deadlines
+---
+
+```{r}
+#| echo: false
+library(dplyr, warn.conflicts = FALSE)
+library(glue)
+library(reactable)
+
+cran_db <- as_tibble(tools::CRAN_package_db())
+cran_results <- as_tibble(tools::CRAN_check_results())
+
+has_deadline <- cran_db |> 
+  filter(!is.na(Deadline)) |> 
+  select(Package, Deadline, Maintainer) |> 
+  mutate(
+    Deadline = as.Date(Deadline),
+    Maintainer = gsub(" <.*?>", "", Maintainer),
+    Details = glue("<a href='#{Package}'>Details</a>"),
+  ) |>
+  arrange(Deadline)
+
+```
+
+There are currently `r nrow(has_deadline)` packages at risk for removal from CRAN if not fixed by the specified deadline:
+
+```{r}
+#| echo: false
+has_deadline |>
+  mutate(
+    Package = glue("<a href='https://cran.r-project.org/web/checks/check_results_{Package}.html'>{Package}</a>")
+  ) |>
+  reactable(
+    filterable = TRUE, 
+    columns = list(Details = colDef(html = TRUE), Package = colDef(html = TRUE)),
+    defaultPageSize = 25
+  )
+```
+
+## Details
+
+```{r}
+#| echo: false
+#| results: asis
+
+problems <- cran_results |> 
+  select(-Maintainer, -Flags, -starts_with("T_"), -Priority) |> 
+  filter(Status != "OK") |> 
+  semi_join(has_deadline, join_by(Package)) |> 
+  relocate(Package) |> 
+  mutate(Status = factor(Status, c("ERROR", "WARNING", "NOTE"))) |>
+  arrange(Package, Status)
+
+problem_summary <- function(package, version, flavor, status) {
+  url <- glue("https://www.r-project.org/nosvn/R.check/{flavor}/{package}-00check.html")
+  paste0(
+    glue("### {package} {version} {{#{package}}}"), "\n",
+    "\n",
+    paste0(glue("* [{flavor}]({url}): {status}"), "\n", collapse = ""),
+    "\n"
+  )
+}
+
+problems |>
+  summarise(
+    problem_summary(Package[1], Version[1], Flavor, Status), 
+    .by = Package
+  ) |>
+  pull() |>
+  writeLines()
+```
