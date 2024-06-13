@@ -6,21 +6,7 @@ knitr:
 ---
 
 ```{r}
-# Time every chunk
-# from https://bookdown.org/yihui/rmarkdown-cookbook/time-chunk.html
-knitr::knit_hooks$set(time_it = local({
-  now <- NULL
-  function(before, options) { 
-    if (before) {
-      now <<- Sys.time()
-      cat("::debug::Starting [", options$label, "]\n", sep = "", file = stderr())
-    } else {
-      res <- difftime(Sys.time(), now, units = "secs")
-      cat("::debug::Ending   [", options$label, "] ", round(res, 1), "s\n", sep = "", file = stderr())
-    }
-  }
-}))
-knitr::opts_chunk$set(time_it = TRUE)
+gha::knitr_time_chunks()
 ```
 
 ```{r}
@@ -35,10 +21,6 @@ library(reactable)
 
 recursive_revdeps <- function(pkgs) {
   tools::package_dependencies(pkgs, reverse = TRUE, recursive = TRUE)
-}
-glue_log <- function(x, env = parent.frame()) {
-  message <- paste0("::notice title=R code::", glue(x, .envir = env), "\n")
-  cat(message, file = stderr())
 }
 glue_bullets <- function(x, env = parent.frame()) {
   glue_collapse(paste0("* ", glue(x, .envir = env)), "\n")
@@ -71,7 +53,7 @@ has_deadline <- cran_db |>
     Dependencies = lengths(recursive_revdeps(Package))
   ) |>
   arrange(Deadline)
-glue_log("Found {nrow(has_deadline)} packages with deadlines")
+gha::gha_notice("Found {nrow(has_deadline)} packages with deadlines")
 # Useful to record a "change" date so we (a) see it in our commit history
 # and (b) ensure that our cron job keeps running, as it will shut off after
 # 60 days of no repo activity
@@ -81,17 +63,17 @@ deadline_details <- cran_checks |>
   semi_join(has_deadline, join_by(Package)) |>
   filter(Status != "OK") |>
   mutate(Status = status_factor(Status))
-glue_log("Found {nrow(deadline_details)} details for {n_distinct(deadline_details$Package)} packages")
+gha::gha_notice("Found {nrow(deadline_details)} details for {n_distinct(deadline_details$Package)} packages")
 
 deadline_reasons <- deadline_details |>
   distinct(Package, Status, Check) |>
   arrange(Package, Status)
-glue_log("Found {nrow(deadline_reasons)} reasons")
+gha::gha_notice("Found {nrow(deadline_reasons)} reasons")
 
 deadline_flavours <- deadline_details |>
   distinct(Package, Status, Flavor) |>
   arrange(Package, Status)
-glue_log("Found {nrow(deadline_flavours)} flavours")
+gha::gha_notice("Found {nrow(deadline_flavours)} flavours")
 ```
 
 ```{r}

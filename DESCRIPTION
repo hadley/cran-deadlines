@@ -2,7 +2,10 @@ Type: project
 Package: cran-deadlines
 Version: 0.0.0.9000
 Imports: 
-  commonmark,
-  dplyr,
-  glue,
-  reactable
+    commonmark,
+    dplyr,
+    gha (>= 0.0.0.9000),
+    glue,
+    reactable
+Remotes:  
+    r-lib/gha
