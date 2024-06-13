@@ -24,7 +24,7 @@ jobs:
 
     - name: Render file
       # Redirect stderr to stdout so GitHub processes log messages
-      run: bash -c "quarto render 2>&1"
+      run: quarto render 2>&1 | tee /dev/tty
 
     - uses: stefanzweifel/git-auto-commit-action@v5
       with:
