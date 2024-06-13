@@ -7,6 +7,10 @@ knitr:
 
 ```{r}
 #| label: setup
+
+# Good idea to supply an informative label for every chunk because that
+# way we get informal logging via the knitr progress bar
+
 library(dplyr, warn.conflicts = FALSE)
 library(glue)
 library(reactable)
@@ -24,11 +28,17 @@ glue_bullets <- function(x, env = parent.frame()) {
 status_factor <- function(x) {
   factor(x, c("FAILURE", "ERROR", "WARNING", "NOTE"))
 }
+
+before_load <- Sys.time()
 ```
 
 ```{r}
 #| label: read-cran-data
 #| cache: true
+
+# Going to be iterating on this report a bunch, and this chunk takes a 
+# relatively long time to run, so it makes sense to cache it, even though
+# we won't ever deploy that cache
 cran_db <- as_tibble(tools::CRAN_package_db())
 cran_checks <- as_tibble(tools::CRAN_check_details())
 cran_results <- as_tibble(tools::CRAN_check_results())
@@ -36,6 +46,9 @@ cran_results <- as_tibble(tools::CRAN_check_results())
 
 ```{r}
 #| label: data-processing
+
+time_diff <- difftime(Sys.time(), before_load, units = "s")
+glue_log("Downloading data took {round(time_diff, 1)} seconds")
 
 has_deadline <- cran_db |> 
   filter(!is.na(Deadline)) |> 
@@ -102,7 +115,7 @@ table <- has_deadline |>
   )
 ```
 
-There are currently `r nrow(has_deadline)` packages at risk for removal from CRAN if not fixed by the specified deadline:
+There are currently `r nrow(has_deadline)` packages at risk for removal from CRAN if not fixed by the specified deadlines:
 
 ```{r}
 #| label: reactable
