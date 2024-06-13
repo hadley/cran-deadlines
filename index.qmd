@@ -6,6 +6,24 @@ knitr:
 ---
 
 ```{r}
+# Time every chunk
+# from https://bookdown.org/yihui/rmarkdown-cookbook/time-chunk.html
+knitr::knit_hooks$set(time_it = local({
+  now <- NULL
+  function(before, options) { 
+    if (before) {
+      now <<- Sys.time()
+      cat("::debug::Starting [", options$label, "]\n", sep = "", file = stderr())
+    } else {
+      res <- difftime(Sys.time(), now, units = "secs")
+      cat("::debug::Ending   [", options$label, "] ", round(res, 1), "s\n", sep = "", file = stderr())
+    }
+  }
+}))
+knitr::opts_chunk$set(time_it = TRUE)
+```
+
+```{r}
 #| label: setup
 
 # Good idea to supply an informative label for every chunk because that
@@ -28,13 +46,11 @@ glue_bullets <- function(x, env = parent.frame()) {
 status_factor <- function(x) {
   factor(x, c("FAILURE", "ERROR", "WARNING", "NOTE"))
 }
-
-before_load <- Sys.time()
 ```
 
 ```{r}
 #| label: read-cran-data
-#| cache: true
+#| cache: false
 
 # Going to be iterating on this report a bunch, and this chunk takes a 
 # relatively long time to run, so it makes sense to cache it, even though
@@ -46,10 +62,6 @@ cran_results <- as_tibble(tools::CRAN_check_results())
 
 ```{r}
 #| label: data-processing
-
-time_diff <- difftime(Sys.time(), before_load, units = "s")
-glue_log("Downloading data took {round(time_diff, 1)} seconds")
-
 has_deadline <- cran_db |> 
   filter(!is.na(Deadline)) |> 
   select(Package, Deadline, Maintainer) |> 
@@ -84,6 +96,8 @@ glue_log("Found {nrow(deadline_flavours)} flavours")
 
 ```{r}
 #| label: generate-html
+
+Sys.sleep(0.5) # just to illustrate interleaving problem
 
 bullet_reasons <- deadline_reasons |> 
   summarise(
