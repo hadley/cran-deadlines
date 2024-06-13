@@ -1,9 +1,12 @@
 ---
 title: CRAN deadlines
+knitr:
+  opts_chunk: 
+    echo: false
 ---
 
 ```{r}
-#| echo: false
+#| label: setup
 library(dplyr, warn.conflicts = FALSE)
 library(glue)
 library(reactable)
@@ -15,8 +18,25 @@ glue_log <- function(x, env = parent.frame()) {
   message <- paste0("::notice title=R code::", glue(x, .envir = env), "\n")
   cat(message, file = stderr())
 }
+glue_bullets <- function(x, env = parent.frame()) {
+  glue_collapse(paste0("* ", glue(x, .envir = env)), "\n")
+}
+status_factor <- function(x) {
+  factor(x, c("FAILURE", "ERROR", "WARNING", "NOTE"))
+}
+```
 
+```{r}
+#| label: read-cran-data
+#| cache: true
 cran_db <- as_tibble(tools::CRAN_package_db())
+cran_checks <- as_tibble(tools::CRAN_check_details())
+cran_results <- as_tibble(tools::CRAN_check_results())
+```
+
+```{r}
+#| label: data-processing
+
 has_deadline <- cran_db |> 
   filter(!is.na(Deadline)) |> 
   select(Package, Deadline, Maintainer) |> 
@@ -26,83 +46,76 @@ has_deadline <- cran_db |>
     Dependencies = lengths(recursive_revdeps(Package))
   ) |>
   arrange(Deadline)
-
-
 glue_log("Found {nrow(has_deadline)} packages with deadlines")
+# Useful to record a "change" date so we (a) see it in our commit history
+# and (b) ensure that our cron job keeps running, as it will shut off after
+# 60 days of no repo activity
 writeLines(as.character(max(has_deadline$Deadline)), "deadline.txt")
+
+deadline_details <- cran_checks |>
+  semi_join(has_deadline, join_by(Package)) |>
+  filter(Status != "OK") |>
+  mutate(Status = status_factor(Status))
+glue_log("Found {nrow(deadline_details)} details for {n_distinct(deadline_details$Package)} packages")
+
+deadline_reasons <- deadline_details |>
+  distinct(Package, Status, Check) |>
+  arrange(Package, Status)
+glue_log("Found {nrow(deadline_reasons)} reasons")
+
+deadline_flavours <- deadline_details |>
+  distinct(Package, Status, Flavor) |>
+  arrange(Package, Status)
+glue_log("Found {nrow(deadline_flavours)} flavours")
+```
+
+```{r}
+#| label: generate-html
+
+bullet_reasons <- deadline_reasons |> 
+  summarise(
+    reasons = glue_bullets("**{Status}**: {Check} "),
+    .by = Package
+  )
+
+bullet_flavours <- deadline_flavours |> 
+  mutate(url = glue(
+    "https://www.r-project.org/nosvn/R.check/{Flavor}/{Package}-00check.html"
+  )) |>
+  summarise(
+    flavours = glue_bullets("[{Flavor}]({url}): {Status}"),
+    .by = Package
+  )
+
+table <- has_deadline |>
+  left_join(bullet_reasons, join_by(Package)) |>
+  left_join(bullet_flavours, join_by(Package)) |>
+  mutate(
+    Package = glue(
+      "<a href='https://cran.r-project.org/web/checks/check_results_{Package}.html'>{Package}</a>"
+    ),
+    details = paste0("Reasons:\n", reasons, "\n\nFavours:\n", flavours),
+    .keep = "unused"
+  ) |>
+  mutate(
+    details = lapply(details, commonmark::markdown_html) 
+  )
 ```
 
 There are currently `r nrow(has_deadline)` packages at risk for removal from CRAN if not fixed by the specified deadline:
 
 ```{r}
-#| echo: false
-has_deadline |>
-  mutate(
-    Package = glue("<a href='#{Package}'>{Package}</a>")
-  ) |>
-  reactable(
-    filterable = TRUE, 
-    columns = list(Package = colDef(html = TRUE)),
-    defaultPageSize = 25
-  )
+#| label: reactable
+reactable(
+  table |> select(-details),
+  details = colDef(
+    details = function(index) table$details[[index]],
+    html = TRUE
+  ),
+  filterable = TRUE, 
+  columns = list(Package = colDef(html = TRUE)),
+  defaultPageSize = 25
+)
 ```
 
 (Source code for this file can be found at <https://github.com/hadley/cran-deadlines>)
-
-## Details
-
-```{r}
-#| echo: false
-#| results: asis
-
-status_factor <- function(x) {
-  factor(x, c("FAILURE", "ERROR", "WARNING", "NOTE"))
-}
-
-cran_checks <- as_tibble(tools::CRAN_check_details())
-problem_summaries <- cran_checks |>
-  filter(Status != "OK") |>
-  semi_join(has_deadline, join_by(Package)) |>
-  distinct(Package, Status, Check) |>
-  mutate(
-    bullet = glue("* **{Status}**: {Check} "), 
-    Status = status_factor(Status),
-  ) |>
-  arrange(Package, Status) |>
-  summarise(bullets = glue_collapse(bullet, "\n"), .by = Package)
-glue_log("Found {nrow(problem_summaries)} packages with check details")
-
-cran_results <- as_tibble(tools::CRAN_check_results())
-problems <- cran_results |> 
-  select(-Maintainer, -Flags, -starts_with("T_"), -Priority) |> 
-  filter(Status != "OK") |> 
-  semi_join(has_deadline, join_by(Package)) |> 
-  relocate(Package) |> 
-  mutate(Status = status_factor(Status)) |>
-  arrange(tolower(Package), Status)
-
-problem_summary <- function(package, version, flavor, status, problems) {
-  url <- glue("https://www.r-project.org/nosvn/R.check/{flavor}/{package}-00check.html")
-  paste0(
-    glue("### {package} {version} {{#{package}}}"), "\n",
-    glue("[CRAN Package Check Results](https://cran.r-project.org/web/checks/check_results_{package}.html)"), "\n\n",
-    "\n",
-    "Problems: \n\n",
-    problems,
-    "\n", "\n",
-    "<details><summary>Checks</summary>\n",
-    paste0(glue("* [{flavor}]({url}): {status}"), "\n", collapse = ""),
-    "</details>",
-    "\n"
-  )
-}
-
-problems |>
-  left_join(problem_summaries, join_by(Package)) |>
-  summarise(
-    problem_summary(Package[1], Version[1], Flavor, Status, bullets[1]), 
-    .by = Package
-  ) |>
-  pull() |>
-  writeLines()
-```
