@@ -32,7 +32,7 @@ status_factor <- function(x) {
 
 ```{r}
 #| label: read-cran-data
-#| cache: false
+#| cache: true
 
 # Going to be iterating on this report a bunch, and this chunk takes a 
 # relatively long time to run, so it makes sense to cache it, even though
@@ -78,9 +78,6 @@ gha::gha_notice("Found {nrow(deadline_flavours)} flavours")
 
 ```{r}
 #| label: generate-html
-
-Sys.sleep(0.5) # just to illustrate interleaving problem
-
 bullet_reasons <- deadline_reasons |> 
   summarise(
     reasons = glue_bullets("**{Status}**: {Check} "),
@@ -111,7 +108,7 @@ table <- has_deadline |>
   )
 ```
 
-There are currently `r nrow(has_deadline)` packages at risk for removal from CRAN if not fixed by the specified deadlines:
+As of `r Sys.Date()`, there are currently `r nrow(has_deadline)` packages at risk for removal from CRAN if not fixed by the specified deadlines. (Note that this table does not included information about extra checks, which may be the reason a package has been given a deadline.)
 
 ```{r}
 #| label: reactable
@@ -127,4 +124,4 @@ reactable(
 )
 ```
 
-(Source code for this file can be found at <https://github.com/hadley/cran-deadlines>)
+(Source code for this site can be found at <https://github.com/hadley/cran-deadlines> and you can see when it was last updated run at <https://github.com/hadley/cran-deadlines/actions/workflows/render.yaml>)
