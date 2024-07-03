@@ -100,7 +100,7 @@ table <- has_deadline |>
     Package = glue(
       "<a href='https://cran.r-project.org/web/checks/check_results_{Package}.html'>{Package}</a>"
     ),
-    details = paste0("Reasons:\n", reasons, "\n\nFavours:\n", flavours),
+    details = paste0("Reasons:\n", reasons, "\n\nFlavours:\n", flavours),
     .keep = "unused"
   ) |>
   mutate(
@@ -108,7 +108,7 @@ table <- has_deadline |>
   )
 ```
 
-As of `r Sys.Date()`, there are currently `r nrow(has_deadline)` packages at risk for removal from CRAN if not fixed by the specified deadlines. (Note that this table does not included information about extra checks, which may be the reason a package has been given a deadline.)
+As of `r Sys.Date()`, there are currently `r nrow(has_deadline)` packages at risk for removal from CRAN if not fixed by the specified deadlines. (Note that this table does not include information about extra checks, which may be the reason a package has been given a deadline.)
 
 ```{r}
 #| label: reactable
@@ -124,4 +124,4 @@ reactable(
 )
 ```
 
-(Source code for this site can be found at <https://github.com/hadley/cran-deadlines> and you can see when it was last updated run at <https://github.com/hadley/cran-deadlines/actions/workflows/render.yaml>)
+(Source code for this site can be found at <https://github.com/hadley/cran-deadlines>; you can see when it was last updated at <https://github.com/hadley/cran-deadlines/actions/workflows/render.yaml>)
