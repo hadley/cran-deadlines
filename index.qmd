@@ -54,10 +54,11 @@ has_deadline <- cran_db |>
   ) |>
   arrange(Deadline)
 gha::gha_notice("Found {nrow(has_deadline)} packages with deadlines")
-# Useful to record a "change" date so we (a) see it in our commit history
-# and (b) ensure that our cron job keeps running, as it will shut off after
-# 60 days of no repo activity
-writeLines(as.character(max(has_deadline$Deadline)), "deadline.txt")
+
+# Useful to record the data somewhere in git history, but mostly needed to
+# keep the cron job running.
+dir.create("data/", showWarnings = FALSE)
+writeLines(as.character(max(has_deadline$Deadline)), "data/deadline.txt")
 
 deadline_details <- cran_checks |>
   semi_join(has_deadline, join_by(Package)) |>

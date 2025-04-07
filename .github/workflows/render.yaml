@@ -4,8 +4,8 @@ on:
   push:
   workflow_dispatch:
   schedule:
-  # Run every 12 hours at 12 minutes past the hour
-  - cron: '12 0/12 * * *'
+    # Run every 12 hours at 12 minutes past the hour
+    - cron: "12 0/12 * * *"
 
 name: render
 
@@ -17,27 +17,33 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
-    - uses: actions/checkout@v4
-    - uses: r-lib/actions/setup-r@v2
-      with:
-        use-public-rspm: true
-    - uses: r-lib/actions/setup-r-dependencies@v2
-    - uses: quarto-dev/quarto-actions/setup@v2
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+      - uses: quarto-dev/quarto-actions/setup@v2
 
-    - name: Render file
-      run: quarto render
-      # Supress quarto coloring so log messages are picked up by GHA
-      env:
-        NO_COLOR: 1
+      - name: Render file
+        run: quarto render
+        # Supress quarto coloring so log messages are picked up by GHA
+        env:
+          NO_COLOR: 1
 
-    - uses: stefanzweifel/git-auto-commit-action@v5
-      with:
-        commit_message: Update deadlines
-    
-    - name: Deploy to GitHub pages 🚀
-      if: github.event_name != 'pull_request'
-      uses: JamesIves/github-pages-deploy-action@v4.5.0
-      with:
-        clean: false
-        branch: gh-pages
-        folder: docs
+      # This is needed to keep the cron job running. We want to keep it out of
+      # the main branch to avoid cluttering the history
+      - name: Publish data
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: data
+          branch: data
+          commit-message: Bump date
+          single-commit: true
+
+      - name: Publish site
+        if: github.event_name != 'pull_request'
+        uses: JamesIves/github-pages-deploy-action@v4.5.0
+        with:
+          clean: false
+          branch: gh-pages
+          folder: docs
