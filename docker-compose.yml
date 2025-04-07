@@ -1,0 +1,8 @@
+services:
+  r-app:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    command: sleep infinity
+    ports:
+      - ${PORT:-2222}:2222
