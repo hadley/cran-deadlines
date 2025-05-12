@@ -1,5 +1,9 @@
 name: execute.yml
 on:
+  # Run on deploy
+  workflow_run:
+    workflows: [deploy.yaml]
+    types: [completed]
   workflow_dispatch:
   schedule:
     # Run every 12 hours at 17 minutes past the hour
