@@ -22,6 +22,12 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      # Need to checkout data so that we can push back into it.
+      - name: Check out data
+        uses: actions/checkout@v4
+        with:
+          ref: data
+
       - name: Render quarto site
         run: quarto render
         working-directory: /app
