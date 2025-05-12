@@ -6,10 +6,6 @@ knitr:
 ---
 
 ```{r}
-gha::knitr_time_chunks()
-```
-
-```{r}
 #| label: setup
 
 # Good idea to supply an informative label for every chunk because that
