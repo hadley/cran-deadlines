@@ -15,6 +15,13 @@ RUN R -q -e 'pak::pkg_install("deps::.", lib = .Library); pak::pak_cleanup(force
     apt-get clean && \
     rm -rf DESCRIPTION /tmp/*
 
+RUN apt-get update && \
+    apt-get install -y curl && \
+    curl -L https://github.com/quarto-dev/quarto-cli/releases/download/v1.6.43/quarto-1.6.43-linux-$(dpkg --print-architecture).deb -o quarto.deb && \
+    apt install ./quarto.deb && \
+    rm quarto.deb
+
+
 # -------------------------------------------------------------------------
 # test-deps stage have stuff needed to run the tests and also for dev
 # -------------------------------------------------------------------------
