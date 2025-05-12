@@ -32,6 +32,7 @@ jobs:
       # This is needed to keep the cron job running. We want to keep it out of
       # the main branch to avoid cluttering the history
       - name: Publish data
+        if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: /app/data
@@ -41,8 +42,8 @@ jobs:
 
       - name: Publish site
         if: github.event_name != 'pull_request'
-        uses: JamesIves/github-pages-deploy-action@v4.5.0
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          clean: false
+          folder: /app/docs
           branch: gh-pages
-          folder: docs
+          clean: false
