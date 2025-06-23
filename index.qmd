@@ -121,4 +121,4 @@ reactable(
 )
 ```
 
-(Source code for this site can be found at <https://github.com/hadley/cran-deadlines>; you can see when it was last updated at <https://github.com/hadley/cran-deadlines/actions/workflows/render.yaml>)
+(Source code for this site can be found at <https://github.com/hadley/cran-deadlines>; you can see when it was last updated at <https://github.com/hadley/cran-deadlines/deployments>)
